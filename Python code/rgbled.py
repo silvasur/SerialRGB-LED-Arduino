@@ -4,7 +4,7 @@
 from __future__ import division
 import wx, math
 from wx.lib.colourchooser.pycolourchooser import PyColourChooser
-from serialrgb import SerialRGB
+from serialrgb import SerialRGB, SyncError
 
 def hsv2rgb(h, s, v):
 	h *= 360.0
@@ -63,14 +63,23 @@ class rgbled_frame(wx.Frame):
 		g = colour.Green()
 		b = colour.Blue()
 		if isinstance(self.rgbled, SerialRGB):
-			self.rgbled.change_color((r, g, b))
+			try:
+				self.rgbled.change_color((r, g, b))
+			except SyncError:
+				wx.MessageDialog(None, "Could not synchronize with Arduino!", "Sync Error", wx.ICON_ERROR | wx.OK).ShowModal()
+				self.Close()
 
 class rgbled_app(wx.App):
 	def OnInit(self):
 		self.rgbled = None
 		portdlg = wx.TextEntryDialog(None, "Serial port:")
 		if portdlg.ShowModal() == wx.ID_OK:
-			self.rgbled = SerialRGB(portdlg.GetValue())
+			try:
+				self.rgbled = SerialRGB(portdlg.GetValue())
+			except SyncError:
+				pass
+			#	wx.MessageDialog(None, "Could not synchronize with Arduino!", "Sync Error", wx.ICON_ERROR | wx.OK).ShowModal()
+			#	return False
 			frame = rgbled_frame(self.rgbled)
 			portdlg.Destroy()
 			frame.Show()
@@ -78,7 +87,7 @@ class rgbled_app(wx.App):
 		return True
 	def OnExit(self):
 		if isinstance(self.rgbled,SerialRGB):
-			self.rgb2hsv.close_connection()
+			self.rgbled.close_connection()
 
 if __name__ == '__main__':
 	myapp = rgbled_app()

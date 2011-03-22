@@ -1,7 +1,15 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-import serial
+import serial, time
+
+class SyncError(Exception):
+	"""Synchronisation error"""
+	def __init__(self, msg=""):
+		self._msg = str(msg)
+	
+	def __str__(self):
+		return msg
 
 class SerialRGB(object):
 	"""Easy controlling of the RGB-LED / Arduino"""
@@ -16,6 +24,12 @@ class SerialRGB(object):
 			self.ser = serial.Serial(addr, baud)
 		except:
 			raise IOError("Could not connect to Arduino via serial port.")
+		# Sync...
+		while self.ser.inWaiting() < 1:
+			self.ser.write("\x00")
+			time.sleep(.01)
+		if self.ser.read(1) != "1":
+			raise SyncError
 	
 	def __del__(self):
 		self.close_connection()
@@ -28,6 +42,8 @@ class SerialRGB(object):
 		"""
 		r, g, b = color
 		self.ser.write(chr(r) + chr(g) + chr(b))
+		if self.ser.read(1) != "1":
+			raise SyncError
 	
 	def close_connection(self):
 		"""Closes the connection to the Arduino."""

@@ -21,6 +21,7 @@ void loop()
     r = Serial.read();
     g = Serial.read();
     b = Serial.read();
+    Serial.write('1'); // Sync
   }
   analogWrite(LEDR, r);
   analogWrite(LEDG, g);
